@@ -1,0 +1,53 @@
+{
+  "name": "dsh-foxy-oopz",
+  "version": "0.1.0",
+  "description": "Foxy OOPZ voice/text bridge for DeepSeek Harness: OOPZ messages, voice call context, DSH Speech, Edge TTS and GPT-SoVITS adapters.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/test-oopz.cjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "oopz-sdk": "^0.2.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    }
+  },
+  "keywords": [
+    "dsh",
+    "foxy",
+    "oopz",
+    "voice",
+    "tts",
+    "stt",
+    "deepseek-harness"
+  ],
+  "author": "Kun-Fox",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kun-Fox/dsh-foxy-oopz.git"
+  },
+  "homepage": "https://github.com/Kun-Fox/dsh-foxy-oopz#readme"
+}

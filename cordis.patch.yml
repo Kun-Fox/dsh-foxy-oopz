@@ -1,0 +1,9 @@
+- insert:
+    - id: foxy-oopz
+      name: dsh-foxy-oopz
+      config:
+        enabled: false
+        voiceEnabled: false
+        ttsProvider: dsh-speech
+        sttProvider: dsh-speech
+        echoReply: true

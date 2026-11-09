@@ -100,7 +100,7 @@ POST {sidecarUrl}/voice/play   { file }
 
 1. 读取完整 JSONL；
 2. 用 Foxy persona + 模型生成一段长期记忆摘要；
-3. 写 `weibo` 之外的 `eventType: 'oopz_call'` 记忆；
+3. 写 `eventType: 'oopz_call'` 的长期记忆；
 4. 在 `calls/index.json` 记录通话摘要。
 
 这样通话中的逐轮细节不直接写长期记忆，只保留整合后的摘要。

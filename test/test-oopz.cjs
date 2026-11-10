@@ -122,6 +122,31 @@ async function main() {
   }
   await assert.rejects(() => voice.join(voiceCtx, {}), /请先选择语音分区和频道/)
 
+  const fetchBeforePlayTest = global.fetch
+  global.fetch = async () => ({
+    ok: true,
+    headers: new Headers({ 'content-type': 'audio/wav' }),
+    arrayBuffer: async () => new Uint8Array([1, 2, 3, 4]).buffer,
+  })
+  try {
+    const tts = await voice.synthesize({}, { ttsProvider: 'gpt-sovits', gptSovitsUrl: 'http://127.0.0.1:9880' }, '测试', 'test')
+    assert.equal(typeof tts.file, 'string')
+    assert.ok(fs.existsSync(tts.file))
+    assert.equal(tts.provider, 'gpt-sovits')
+  } finally {
+    global.fetch = fetchBeforePlayTest
+  }
+
+  global.fetch = async () => ({ ok: true, json: async () => ({ ok: false, error: 'not joined' }) })
+  try {
+    await assert.rejects(
+      () => voice.play({}, { sidecarUrl: 'http://127.0.0.1:7899' }, 'test.wav'),
+      /not joined/,
+    )
+  } finally {
+    global.fetch = fetchBeforePlayTest
+  }
+
   let clientPlugin
   global.window = {
     __ModuleLoader__: {

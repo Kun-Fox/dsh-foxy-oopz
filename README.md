@@ -68,11 +68,23 @@ dsh plugin --profile desktop add dsh-foxy-oopz
 
 ### TTS
 
-三种适配器：
+四种适配器：
 
+- `windows-sapi`：Windows 本机 SAPI（PowerShell + `System.Speech`），无需额外依赖；默认优先使用，失败时自动回退到它。
 - `dsh-speech`：调用 `ctx.get('dshSpeech').synthesize()`，需要安装 `@lamplitisles/dsh-speech` 并配置 DashScope key。
 - `edge-tts`：调用本机 `edge-tts` 命令，输出 MP3。
 - `gpt-sovits`：POST `${gptSovitsUrl}/tts`，请求 `{ text, text_lang: 'zh', model }`，返回音频二进制。
+
+> 0.1.11 修复了所有 TTS 适配器共用的 `tempFile()` 路径错误：此前它误调用了语音加入函数 `join()`，拿到 Promise 而不是路径，导致 TTS 实际一直失败。
+
+### 退出与登录
+
+设置页顶栏提供：
+
+- **断开 OOPZ**：停止 bot，但保留凭据。
+- **退出登录**：停止 bot 并清除 Token、私钥、Area/Channel 等连接信息。
+- **退出语音频道并整合记忆**：离开 Agora 频道，结束当前通话并写入 Foxy 记忆；没有通话时也会清理残留的侧车连接。
+- **测试 TTS**：必须先开始语音通话；会确保侧车已加入当前频道后再播放。
 
 ### STT
 

@@ -41,6 +41,22 @@ async function main() {
   assert.equal(finished.turns, 2)
   assert.ok(fs.existsSync(path.join(callContext.callsDir(saved), 'index.json')))
 
+  let clientPlugin
+  global.window = {
+    __ModuleLoader__: {
+      load({ factory }) {
+        clientPlugin = factory((id) =>
+          id === 'react' ? { createElement: () => ({}) } : {},
+        )
+      },
+    },
+  }
+  require('../lib/client.js')
+  assert.equal(clientPlugin.name, 'dsh-foxy-oopz')
+  assert.deepEqual(clientPlugin.inject, ['slots'])
+  assert.equal(typeof clientPlugin.apply, 'function')
+  delete global.window
+
   console.log('foxy-oopz tests passed')
 }
 

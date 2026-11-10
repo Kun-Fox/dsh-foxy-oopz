@@ -88,8 +88,33 @@ dsh plugin --profile desktop add dsh-foxy-oopz
 
 ### STT
 
-- `dsh-speech`：调用 `dshSpeech.transcribe()`，使用 Qwen ASR。
+- `dsh-speech`：调用 `dshSpeech.transcribe()`，使用 Qwen ASR；未安装或调用失败时默认回退本地 SenseVoice。
+- `sensevoice`：直接使用本地 SenseVoice，不依赖 DashScope。
 - `none`：关闭。
+
+本地 SenseVoice 依赖 Python `sherpa-onnx`、`ffmpeg` 和模型文件；默认目录：
+
+```text
+~/.dsh/speech-to-text/sensevoice/models/sensevoice-onnx
+```
+
+可用 `sttModelDir`、`sttPython`、`ffmpegPath` 覆盖。首次使用前可自测：
+
+```powershell
+python stt/sensevoice.py --wav test.wav
+```
+
+### 语音回复闭环
+
+通话开始后，插件每 1.5 秒从侧车拉取远端语音片段：
+
+1. ffmpeg 转 16k 单声道 WAV；
+2. DSH Speech 或本地 SenseVoice 转写；
+3. 按 `replyMode` 判断是否回复：`off` 不回复、`trigger` 仅命中 `triggerWords`、`all` 每条都回；
+4. 用 Foxy persona + `llmApiKey` 生成 1–3 句回复；
+5. TTS 合成并通过侧车播放到 Agora 频道。
+
+`replyCooldownMs` 默认 6000ms，防止连续语音触发刷屏或 TTS 自激。`llmApiKey` 为空时只记录转写，不会生成回复。
 
 ### OOPZ 语音侧车
 
@@ -98,7 +123,8 @@ dsh plugin --profile desktop add dsh-foxy-oopz
 0.1.10 起仓库自带一个 Playwright + Agora Web SDK 侧车 `sidecar/`，它会：
 - 用 `supplierSign`、`roomId`、数字 `pid` 加入 Agora 频道；
 - 向 Agora signaling 发送 `data_stream`，让 OOPZ 识别 `oopzUid ↔ agoraUid`；
-- 把 TTS 音频作为 `BufferSourceAudioTrack` 发布，机器人能真正“说话”。
+- 把 TTS 音频作为 `BufferSourceAudioTrack` 发布，机器人能真正“说话”；
+- 从 0.1.12 起用 `RemoteAudioTrack.setAudioFrameCallback()` 直接收远端 PCM，按用户、每 6 秒切段，检测到人声才上传，交给插件做 STT。
 
 侧车启动（插件安装后，根依赖已包含 Playwright/Agora）：
 
@@ -117,13 +143,16 @@ node server.mjs
 默认监听 `http://127.0.0.1:7899`，与插件默认 `sidecarUrl` 一致。接口：
 
 ```text
-POST {sidecarUrl}/voice/join   { area, channel, appId, token, roomId, uid, oopzUid }
+POST {sidecarUrl}/voice/join     { area, channel, appId, token, roomId, uid, oopzUid }
 POST {sidecarUrl}/voice/leave
-POST {sidecarUrl}/voice/play   { file }
+POST {sidecarUrl}/voice/play     { file }
+POST {sidecarUrl}/voice/capture  { uid, mime, data(base64), startedAt, endedAt }
+GET  {sidecarUrl}/voice/captures?after=<id>
+POST {sidecarUrl}/voice/captures/ack { ids }
 GET  {sidecarUrl}/health
 ```
 
-限制：当前侧车只发布 TTS，**没有捕获每个远端用户的音轨**；要做“听每个人说话 + 分用户 STT”，需要在 sidecar 里继续接 Agora 远端音轨和 VAD。私人频道还需要给机器人账号频道权限。
+远端捕获按 Agora 用户分别切段；只有检测到人声的 6 秒片段才上传，最多保留 40 段、单段 8 MB。私人频道还需要给机器人账号频道权限。
 
 ## 通话上下文
 

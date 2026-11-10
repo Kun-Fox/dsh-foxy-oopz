@@ -25,6 +25,10 @@ let page = null
 let joining = null
 let identityTimer = null
 let current = null
+const captures = []
+let captureSeq = 0
+const MAX_CAPTURES = 40
+const MAX_CAPTURE_BYTES = 8 * 1024 * 1024
 
 async function ensurePage() {
   if (page && !page.isClosed()) return page
@@ -146,6 +150,7 @@ async function handleLeave() {
     try { await page.evaluate(() => window.agoraLeave()) } catch {}
   }
   current = null
+  captures.length = 0
   return { ok: true }
 }
 
@@ -156,9 +161,52 @@ async function handleStop() {
   return { ok: true }
 }
 
+function handleCapture(body) {
+  const uid = String(body.uid || '').trim()
+  if (!uid) throw new Error('uid is required')
+  const mime = String(body.mime || 'audio/wav').trim()
+  const data = String(body.data || '')
+  if (!data) throw new Error('data is required')
+  const buffer = Buffer.from(data, 'base64')
+  if (!buffer.length) throw new Error('empty capture')
+  if (buffer.length > MAX_CAPTURE_BYTES) throw new Error('capture too large')
+  const capture = {
+    id: ++captureSeq,
+    uid,
+    mime,
+    startedAt: Number(body.startedAt) || Date.now(),
+    endedAt: Number(body.endedAt) || Date.now(),
+    durationMs: Number(body.durationMs) || 0,
+    data: buffer.toString('base64'),
+  }
+  captures.push(capture)
+  while (captures.length > MAX_CAPTURES) captures.shift()
+  return { ok: true, id: capture.id, queued: captures.length }
+}
+
+function handleCaptures(after = 0) {
+  const id = Math.max(0, Number(after) || 0)
+  return {
+    ok: true,
+    captures: captures.filter((item) => item.id > id),
+    latest: captures.length ? captures[captures.length - 1].id : id,
+  }
+}
+
+function handleCaptureAck(body) {
+  const ids = new Set((Array.isArray(body.ids) ? body.ids : []).map((id) => Number(id)))
+  if (ids.size) {
+    for (let i = captures.length - 1; i >= 0; i--) {
+      if (ids.has(captures[i].id)) captures.splice(i, 1)
+    }
+  }
+  return { ok: true, queued: captures.length }
+}
+
 const server = createServer(async (req, res) => {
   try {
-    if (req.method === 'GET' && (req.url === '/health' || req.url?.startsWith('/health?'))) {
+    const url = new URL(req.url, `http://${HOST}:${PORT}`)
+    if (req.method === 'GET' && (url.pathname === '/health')) {
       send(res, 200, {
         ok: true,
         service: 'dsh-foxy-oopz-sidecar',
@@ -169,19 +217,25 @@ const server = createServer(async (req, res) => {
         roomId: current?.roomId || '',
         agoraUid: current?.agoraUid || null,
         oopzUid: current?.oopzUid || '',
+        captures: captures.length,
+        latestCapture: captures.length ? captures[captures.length - 1].id : 0,
       })
       return
+    }
+    if (req.method === 'GET' && url.pathname === '/voice/captures') {
+      return send(res, 200, handleCaptures(url.searchParams.get('after')))
     }
     if (req.method === 'GET' && await serveStatic(req, res)) return
     if (req.method !== 'POST') return send(res, 405, { ok: false, error: 'POST required' })
 
-    const url = new URL(req.url, `http://${HOST}:${PORT}`)
     const body = await readBody(req)
     let result
     if (url.pathname === '/voice/join') result = await handleJoin(body)
     else if (url.pathname === '/voice/play') result = await handlePlay(body)
     else if (url.pathname === '/voice/leave') result = await handleLeave()
     else if (url.pathname === '/voice/stop') result = await handleStop()
+    else if (url.pathname === '/voice/capture') result = handleCapture(body)
+    else if (url.pathname === '/voice/captures/ack') result = handleCaptureAck(body)
     else return send(res, 404, { ok: false, error: 'not found' })
     send(res, 200, result)
   } catch (error) {

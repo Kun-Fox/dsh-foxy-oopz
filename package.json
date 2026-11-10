@@ -1,6 +1,6 @@
 {
   "name": "dsh-foxy-oopz",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Foxy OOPZ voice/text bridge for DeepSeek Harness: OOPZ messages, voice call context, DSH Speech, Edge TTS and GPT-SoVITS adapters.",
   "type": "module",
   "main": "lib/index.js",
@@ -15,6 +15,7 @@
     "sidecar/package.json",
     "sidecar/package-lock.json",
     "sidecar/README.md",
+    "stt/sensevoice.py",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"

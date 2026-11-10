@@ -41,6 +41,26 @@ async function main() {
   assert.equal(finished.turns, 2)
   assert.ok(fs.existsSync(path.join(callContext.callsDir(saved), 'index.json')))
 
+  const login = await import('../lib/login.js')
+  let loginRequest
+  const originalFetch = global.fetch
+  global.fetch = async (url, options) => {
+    loginRequest = { url, options }
+    return new Response(JSON.stringify({ status: true, data: { uid: '10001', signature: 'jwt-test', signatureNearExpired: 0 } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+  const credentials = await login.loginWithPassword('13800000000', 'password', { deviceId: 'device-test' })
+  global.fetch = originalFetch
+  assert.equal(credentials.personUid, '10001')
+  assert.equal(credentials.jwtToken, 'jwt-test')
+  assert.ok(credentials.privateKey.includes('BEGIN PRIVATE KEY'))
+  const loginBody = JSON.parse(loginRequest.options.body)
+  assert.equal(loginBody.loginType, 'PASSWORD')
+  assert.ok(loginBody.code.length > 100)
+  assert.ok(loginRequest.options.headers['oopz-sign'])
+
   let clientPlugin
   global.window = {
     __ModuleLoader__: {

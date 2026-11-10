@@ -32,6 +32,16 @@ dsh plugin --profile desktop add dsh-foxy-oopz
 
 安装后完整重启 DSH。左侧栏会出现 **Foxy OOPZ**，设置页也有同名入口。
 
+## OOPZ 登录
+
+设置页支持两种方式：
+
+1. **手机号 + 密码登录**：调用 OOPZ 网页登录接口，成功后自动写入
+   `deviceId / personUid / jwtToken / privateKey`。手机号和密码只用于本次请求，不保存。
+2. **手动填写凭据**：在 [web.oopz.cn](https://web.oopz.cn) 登录机器人账号后获取。
+
+扫码/短信验证码目前仍需要用户在 OOPZ 网页完成，插件不会绕过风控。
+
 ## OOPZ 凭据
 
 在 [web.oopz.cn](https://web.oopz.cn) 登录机器人账号，从浏览器获取：

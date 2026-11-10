@@ -47,12 +47,12 @@ dsh plugin --profile desktop add dsh-foxy-oopz
 
 设置页分四块：
 
-1. **OOPZ 连接**：凭据、文字 Area/Channel、触发词。
-2. **语音与适配器**：语音频道、STT/TTS、GPT-SoVITS、语音侧车。
+1. **OOPZ 连接**：凭据、网页登录、连接/断开；文字消息已关闭。
+2. **语音与适配器**：语音 Area/Channel、监听模式、允许/拒绝/静音用户、STT/TTS、GPT-SoVITS、语音侧车、自动进房。
 3. **模型与记忆**：OpenAI 兼容 Base URL、模型、API Key、Foxy Memory preset、附加系统提示词。
 4. **运行状态**：连接状态、最近消息、通话记录。
 
-触发规则：消息包含配置的触发词（默认 `Foxy` / `foxy`）或以 `/` 开头时才回复。
+监听模式：`all` 所有人；`allow` 仅允许名单；`deny` 名单外；`muteUserIds` 优先级最高。
 
 ## 语音链路
 

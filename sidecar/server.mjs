@@ -2,9 +2,15 @@ import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 import { chromium } from 'playwright-core'
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url))
+const require = createRequire(import.meta.url)
+let AGORA_SDK_FILE = join(ROOT, 'node_modules', 'agora-rtc-sdk-ng', 'AgoraRTC_N-production.js')
+try {
+  AGORA_SDK_FILE = require.resolve('agora-rtc-sdk-ng/AgoraRTC_N-production.js')
+} catch {}
 const PORT = Number(process.env.PORT || 7899)
 const HOST = '127.0.0.1'
 const DEFAULT_AGORA_APP_ID = process.env.AGORA_APP_ID || '358eebceadb94c2a9fd91ecd7b341602'
@@ -84,8 +90,7 @@ async function readBody(req, limit = 64 * 1024 * 1024) {
 async function serveStatic(req, res) {
   const url = new URL(req.url, `http://${HOST}:${PORT}`)
   if (url.pathname === '/agora.js') {
-    const file = join(ROOT, 'node_modules', 'agora-rtc-sdk-ng', 'AgoraRTC_N-production.js')
-    const data = await readFile(file)
+    const data = await readFile(AGORA_SDK_FILE)
     res.writeHead(200, { 'content-type': MIME['.js'], 'content-length': data.length, 'cache-control': 'no-store' })
     res.end(data)
     return true

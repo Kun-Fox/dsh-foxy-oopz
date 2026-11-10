@@ -22,10 +22,12 @@ node server.mjs
 1. 插件先调 OOPZ `/area/v2/channel/enter`，拿 `supplierSign`、`roomId` 和数字 `pid`；
 2. 侧车用 `agoraJoin(appId, supplierSign, roomId, pid)` 加入 Agora；
 3. 侧车向 Agora signaling 发 `data_stream`：`{uid: OOPZ uid, cid: Agora uid, m, hm}`；
-4. `/voice/play` 收到本地音频文件，解码后作为 `BufferSourceAudioTrack` 发布。
+4. `/voice/play` 收到本地音频文件，解码后作为 `BufferSourceAudioTrack` 发布；
+5. `RemoteAudioTrack.setAudioFrameCallback()` 按远端用户收 PCM，6 秒一段，只有检测到人声才上传到 `/voice/capture`。
 
 ## 限制
 
-- 只发布 TTS，不捕获远端用户音轨；分用户 STT 需要继续接 Agora `user-published` + VAD。
+- 远端捕获按 Agora uid 分用户切段，不做说话人分离/降噪；音乐、噪声可能被 VAD 当成语音。
+- 只在通话期间捕获，最多保留 40 段、单段 8 MB；插件消费后会 ack 删除。
 - 私人频道需要机器人账号有权限；否则 `enter_channel` 返回 `ERR.003.00001`。
 - `supplierSign` 有时效，插件进频道后应尽快播放，不要缓存太久。

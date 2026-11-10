@@ -81,21 +81,37 @@ dsh plugin --profile desktop add dsh-foxy-oopz
 
 ### OOPZ 语音侧车
 
-由于 OOPZ Node SDK 的 `voice` 只提供占位播放接口，真实语音需要侧车：
+0.1.9 起，未配置侧车时会调用 OOPZ 的 `/area/v2/channel/enter`，让机器人账号以“在线”状态进入频道；私人频道会返回“暂无访问该频道的权限”。这只能拿到 Agora 凭据，不能收发音轨。
 
-```text
-POST {sidecarUrl}/voice/join   { area, channel }
-POST {sidecarUrl}/voice/leave
-POST {sidecarUrl}/voice/play   { file }
+0.1.10 起仓库自带一个 Playwright + Agora Web SDK 侧车 `sidecar/`，它会：
+- 用 `supplierSign`、`roomId`、数字 `pid` 加入 Agora 频道；
+- 向 Agora signaling 发送 `data_stream`，让 OOPZ 识别 `oopzUid ↔ agoraUid`；
+- 把 TTS 音频作为 `BufferSourceAudioTrack` 发布，机器人能真正“说话”。
+
+侧车启动（插件安装后，根依赖已包含 Playwright/Agora）：
+
+```powershell
+node node_modules/dsh-foxy-oopz/sidecar/server.mjs
 ```
 
-建议侧车用 Playwright 打开 `web.oopz.cn`，登录机器人账号，进入语音频道，并负责：
+源码仓库里也可以：
 
-- 把远端音频按 VAD 切片，调用本插件 `/api/dsh-foxy-oopz/call/stt` 或本地 ASR；
-- 把转写结果通过 `/api/dsh-foxy-oopz/call/turn` 追加到通话上下文；
-- 接收 `/voice/play` 播放 TTS 文件。
+```powershell
+cd sidecar
+npm install
+node server.mjs
+```
 
-侧车不包含在本仓库中；这是语音收发的边界。
+默认监听 `http://127.0.0.1:7899`，与插件默认 `sidecarUrl` 一致。接口：
+
+```text
+POST {sidecarUrl}/voice/join   { area, channel, appId, token, roomId, uid, oopzUid }
+POST {sidecarUrl}/voice/leave
+POST {sidecarUrl}/voice/play   { file }
+GET  {sidecarUrl}/health
+```
+
+限制：当前侧车只发布 TTS，**没有捕获每个远端用户的音轨**；要做“听每个人说话 + 分用户 STT”，需要在 sidecar 里继续接 Agora 远端音轨和 VAD。私人频道还需要给机器人账号频道权限。
 
 ## 通话上下文
 

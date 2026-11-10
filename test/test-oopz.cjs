@@ -61,6 +61,67 @@ async function main() {
   assert.ok(loginBody.code.length > 100)
   assert.ok(loginRequest.options.headers['oopz-sign'])
 
+  const voice = await import('../lib/voice.js')
+  let enterRequest
+  const voiceCtx = {
+    foxyOopz: {
+      bot: {
+        rest: {
+          transport: {
+            get: async () => ({ data: { pid: '213779640' } }),
+            post: async (url, body) => {
+              enterRequest = { url, body }
+              return { status: true, data: { rtcToken: 'rtc-test', roomId: 'room-test' } }
+            },
+          },
+        },
+      },
+    },
+  }
+  const joined = await voice.join(voiceCtx, { voiceAreaId: 'area-1', voiceChannelId: 'channel-1' })
+  assert.equal(enterRequest.url, '/area/v2/channel/enter')
+  assert.equal(enterRequest.body.type, 'VOICE')
+  assert.equal(enterRequest.body.area, 'area-1')
+  assert.equal(enterRequest.body.pid, '213779640')
+  assert.equal(joined.audio, false)
+  assert.equal(joined.mode, 'presence')
+  const onlineFetch = global.fetch
+  let sidecarRequest
+  global.fetch = async (url, options) => {
+    sidecarRequest = { url, body: JSON.parse(options.body) }
+    return { ok: true, json: async () => ({ ok: true, agoraUid: 213779640 }) }
+  }
+  try {
+    const viaSidecar = await voice.join(voiceCtx, {
+      voiceAreaId: 'area-1',
+      voiceChannelId: 'channel-1',
+      sidecarUrl: 'http://127.0.0.1:7899',
+      personUid: 'oopz-user',
+    })
+    assert.equal(sidecarRequest.body.roomId, 'room-test')
+    assert.equal(sidecarRequest.body.token, 'rtc-test')
+    assert.equal(sidecarRequest.body.uid, '213779640')
+    assert.equal(sidecarRequest.body.oopzUid, 'oopz-user')
+    assert.equal(viaSidecar.audio, true)
+    assert.equal(viaSidecar.mode, 'agora')
+  } finally {
+    global.fetch = onlineFetch
+  }
+  global.fetch = async () => { throw new Error('offline') }
+  try {
+    const fallback = await voice.join(voiceCtx, {
+      voiceAreaId: 'area-1',
+      voiceChannelId: 'channel-1',
+      sidecarUrl: 'http://127.0.0.1:7899',
+    })
+    assert.equal(fallback.audio, false)
+    assert.equal(fallback.mode, 'presence')
+    assert.match(fallback.warning, /侧车不可达/)
+  } finally {
+    global.fetch = onlineFetch
+  }
+  await assert.rejects(() => voice.join(voiceCtx, {}), /请先选择语音分区和频道/)
+
   let clientPlugin
   global.window = {
     __ModuleLoader__: {

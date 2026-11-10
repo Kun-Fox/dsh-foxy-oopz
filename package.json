@@ -1,6 +1,6 @@
 {
   "name": "dsh-foxy-oopz",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "description": "Foxy OOPZ voice/text bridge for DeepSeek Harness: OOPZ messages, voice call context, DSH Speech, Edge TTS and GPT-SoVITS adapters.",
   "type": "module",
   "main": "lib/index.js",
@@ -10,6 +10,11 @@
   },
   "files": [
     "lib",
+    "sidecar/server.mjs",
+    "sidecar/agora_player.html",
+    "sidecar/package.json",
+    "sidecar/package-lock.json",
+    "sidecar/README.md",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
@@ -21,7 +26,9 @@
     "node": ">=20"
   },
   "dependencies": {
-    "oopz-sdk": "^0.2.0"
+    "agora-rtc-sdk-ng": "^4.23.4",
+    "oopz-sdk": "^0.2.0",
+    "playwright-core": "^1.49.1"
   },
   "dsh": {
     "bundle": {

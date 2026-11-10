@@ -1,0 +1,14 @@
+{
+  "name": "dsh-foxy-oopz-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Agora Web sidecar for dsh-foxy-oopz",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "agora-rtc-sdk-ng": "^4.23.4",
+    "playwright-core": "^1.49.1"
+  }
+}

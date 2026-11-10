@@ -2,14 +2,13 @@
 
 Foxy 的 OOPZ 适配器框架，运行于 DeepSeek Harness。
 
-目标是把 OOPZ 的文字频道与语音频道接入 Foxy：
+目标是把 OOPZ 语音频道接入 Foxy：
 
-- OOPZ 文字消息 → Foxy 模型 → 回复；
-- 语音频道 → 转写 → Foxy → TTS 播放；
+- 语音频道 → 按用户转写 → Foxy → TTS 播放；
 - 一次语音通话产生一份临时上下文，结束后整合成长期记忆；
 - 记忆写入 `foxyMemory`，平台标记为 `oopz`。
 
-> 当前版本是框架/早期实现。文字消息链路已按 OOPZ Node SDK 接入；语音链路依赖 OOPZ 网页语音侧车和 DSH Speech。没有真实 OOPZ 账号时只能做模块级测试。
+> 当前版本是语音框架/早期实现。文字消息默认关闭，只保留语音；语音链路依赖 OOPZ 网页语音侧车和 DSH Speech。没有真实 OOPZ 账号时只能做模块级测试。
 
 ## 依赖
 

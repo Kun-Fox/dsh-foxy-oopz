@@ -1,6 +1,6 @@
 {
   "name": "dsh-foxy-oopz",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Foxy OOPZ voice/text bridge for DeepSeek Harness: OOPZ messages, voice call context, DSH Speech, Edge TTS and GPT-SoVITS adapters.",
   "type": "module",
   "main": "lib/index.js",

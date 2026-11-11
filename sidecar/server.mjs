@@ -110,17 +110,19 @@ async function handleJoin(body) {
   const roomId = String(body.roomId || '').trim()
   const uid = String(body.uid || '').trim()
   const oopzUid = String(body.oopzUid || '').trim()
+  const vad = body.vad && typeof body.vad === 'object' ? body.vad : {}
   if (!roomId) throw new Error('roomId is required')
   if (!uid) throw new Error('uid is required')
   if (!token) throw new Error('token/supplierSign is required')
 
   const p = await ensurePage()
-  const result = await p.evaluate(async ({ appId, token, roomId, uid, oopzUid }) => {
+  const result = await p.evaluate(async ({ appId, token, roomId, uid, oopzUid, vad }) => {
+    if (typeof window.agoraSetCaptureConfig === 'function') window.agoraSetCaptureConfig(vad)
     const joined = await window.agoraJoin(appId || '358eebceadb94c2a9fd91ecd7b341602', token, roomId, uid)
     if (!joined?.ok) return joined
     const identity = await window.agoraSetVoiceIdentity(oopzUid, joined.uid)
     return { ...joined, identity, state: window.agoraGetStatus() }
-  }, { appId, token, roomId, uid, oopzUid })
+  }, { appId, token, roomId, uid, oopzUid, vad })
 
   if (!result?.ok) throw new Error(result?.error || 'Agora join failed')
   current = { appId, roomId, uid, agoraUid: result.uid, oopzUid, joinedAt: Date.now() }

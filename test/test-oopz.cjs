@@ -153,6 +153,21 @@ async function main() {
     global.fetch = fetchBeforePlayTest
   }
 
+  const routes = new Map()
+  const { apply } = await import('../lib/index.js')
+  apply({
+    logger: { info() {}, warn() {} },
+    get() { return undefined },
+    effect() {},
+    inject(ids, callback) {
+      callback({ connection: { fetch: { register(route) { routes.set(route.path, route.fetch) } } } })
+    },
+  }, { enabled: false })
+  const presetsResponse = await routes.get('/api/dsh-foxy-oopz/presets')(new Request('http://x/api/dsh-foxy-oopz/presets'))
+  const presetsBody = await presetsResponse.json()
+  assert.equal(presetsBody.ok, true)
+  assert.ok(Array.isArray(presetsBody.presets))
+
   let clientPlugin
   global.window = {
     __ModuleLoader__: {

@@ -64,6 +64,17 @@ dsh plugin --profile desktop add dsh-foxy-oopz
 
 监听模式：`all` 所有人；`allow` 仅允许名单；`deny` 名单外；`muteUserIds` 优先级最高。
 
+分段参数（0.1.16 起）：
+
+| 字段 | 默认 | 说明 |
+| --- | --- | --- |
+| `vadSilenceMs` | `900` | 说完后静音多久算一整句，300–5000 |
+| `vadMinSpeechMs` | `300` | 少于此语音时长视为噪声，150–3000 |
+| `vadMaxUtteranceMs` | `15000` | 单句最长时长，超过强制切段，3000–60000 |
+| `vadThreshold` | `0.008` | 能量阈值 RMS，0.001–0.1；环境吵可调高 |
+
+每次切段后，转写会立即追加到运行状态里的「实时转写」；只有 `replyMode` 命中时才进入 LLM + TTS。`triggerWords` 留空时 `trigger` 等同于每条都回。
+
 ## 语音链路
 
 ### TTS
@@ -126,7 +137,7 @@ python stt/sensevoice.py --wav test.wav
 - 用 `supplierSign`、`roomId`、数字 `pid` 加入 Agora 频道；
 - 向 Agora signaling 发送 `data_stream`，让 OOPZ 识别 `oopzUid ↔ agoraUid`；
 - 把 TTS 音频作为 `BufferSourceAudioTrack` 发布，机器人能真正“说话”；
-- 从 0.1.12 起用 `RemoteAudioTrack.setAudioFrameCallback()` 直接收远端 PCM，按用户、每 6 秒切段，检测到人声才上传，交给插件做 STT。
+- 从 0.1.12 起用 `RemoteAudioTrack.setAudioFrameCallback()` 直接收远端 PCM；0.1.16 起改为按用户能量 VAD 切句：累计语音达到最短时长、说完静音达到 `vadSilenceMs` 才上传整句，超过 `vadMaxUtteranceMs` 强制切段。不再固定 6 秒切断一句话。
 
 侧车启动（插件安装后，根依赖已包含 Playwright/Agora）：
 
@@ -154,7 +165,7 @@ POST {sidecarUrl}/voice/captures/ack { ids }
 GET  {sidecarUrl}/health
 ```
 
-远端捕获按 Agora 用户分别切段；只有检测到人声的 6 秒片段才上传，最多保留 40 段、单段 8 MB。私人频道还需要给机器人账号频道权限。
+远端捕获按 Agora 用户分别切段；只有检测到人声、达到最短时长的整句才上传，最多保留 40 段、单段 8 MB。私人频道还需要给机器人账号频道权限。
 
 ## 通话上下文
 

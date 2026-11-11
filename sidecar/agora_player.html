@@ -145,6 +145,26 @@ let activePlayback = null;
 /* -------------------- Remote audio capture -------------------- */
 
 const remoteCaptures = new Map();
+let captureConfig = {
+  silenceMs: 900,
+  minSpeechMs: 300,
+  maxUtteranceMs: 15000,
+  threshold: 0.008,
+};
+
+window.agoraSetCaptureConfig = (next = {}) => {
+  const value = (key, min, max, fallback) => {
+    const number = Number(next?.[key]);
+    return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : fallback;
+  };
+  captureConfig = {
+    silenceMs: value("silenceMs", 300, 5000, captureConfig.silenceMs),
+    minSpeechMs: value("minSpeechMs", 150, 3000, captureConfig.minSpeechMs),
+    maxUtteranceMs: value("maxUtteranceMs", 3000, 60000, captureConfig.maxUtteranceMs),
+    threshold: value("threshold", 0.001, 0.1, captureConfig.threshold),
+  };
+  return { ...captureConfig };
+};
 
 function bytesToBase64(bytes) {
   let binary = "";
@@ -217,20 +237,22 @@ function startRemoteCapture(user) {
 
   let chunks = [];
   let sampleRate = 48000;
-  let segmentStart = Date.now();
-  let heardVoice = false;
+  let segmentStart = 0;
+  let speechMs = 0;
+  let silenceMs = 0;
   let sending = false;
   let stopped = false;
 
   const flush = async (force = false) => {
-    if (sending || stopped && !force) return;
+    if (sending || (stopped && !force)) return;
     if (!chunks.length) return;
+    const shouldSend = speechMs >= captureConfig.minSpeechMs;
     const data = chunks;
-    const shouldSend = heardVoice;
+    const startedAt = segmentStart || Date.now();
     chunks = [];
-    heardVoice = false;
-    const startedAt = segmentStart;
-    segmentStart = Date.now();
+    speechMs = 0;
+    silenceMs = 0;
+    segmentStart = 0;
     if (!shouldSend) return;
     sending = true;
     try {
@@ -241,17 +263,33 @@ function startRemoteCapture(user) {
     }
   };
 
+  try { track.play().catch(() => {}); } catch {}
   track.setAudioFrameCallback((buffer) => {
     if (stopped || !buffer) return;
     try {
       sampleRate = buffer.sampleRate || sampleRate;
       const channel = buffer.getChannelData(0);
+      const frameMs = (channel.length / sampleRate) * 1000;
       let sum = 0;
       for (let i = 0; i < channel.length; i++) sum += channel[i] * channel[i];
       const rms = Math.sqrt(sum / channel.length);
-      if (rms > 0.008) heardVoice = true;
-      chunks.push(new Float32Array(channel));
-      if (Date.now() - segmentStart >= 6000) void flush(false);
+      const voiced = rms > captureConfig.threshold;
+
+      if (voiced) {
+        if (!segmentStart) segmentStart = Date.now() - frameMs;
+        speechMs += frameMs;
+        silenceMs = 0;
+      } else if (speechMs > 0) {
+        silenceMs += frameMs;
+      }
+
+      if (speechMs > 0) chunks.push(new Float32Array(channel));
+
+      if (speechMs >= captureConfig.minSpeechMs && silenceMs >= captureConfig.silenceMs) {
+        void flush(false);
+      } else if (speechMs > 0 && speechMs + silenceMs >= captureConfig.maxUtteranceMs) {
+        void flush(false);
+      }
     } catch (error) {
       console.warn("[capture frame]", error?.message || error);
     }

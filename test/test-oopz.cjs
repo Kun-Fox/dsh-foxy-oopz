@@ -66,6 +66,9 @@ async function main() {
   const voiceCtx = {
     foxyOopz: {
       bot: {
+        areas: {
+          getAreaChannels: async () => [{ id: 'auto-channel', type: 'VOICE' }],
+        },
         rest: {
           transport: {
             get: async () => ({ data: { pid: '213779640' } }),
@@ -85,6 +88,9 @@ async function main() {
   assert.equal(enterRequest.body.pid, '213779640')
   assert.equal(joined.audio, false)
   assert.equal(joined.mode, 'presence')
+  const autoChannel = await voice.join(voiceCtx, { voiceAreaId: 'area-1' })
+  assert.equal(enterRequest.body.channel, 'auto-channel')
+  assert.equal(autoChannel.channel, 'auto-channel')
   const onlineFetch = global.fetch
   let sidecarRequest
   global.fetch = async (url, options) => {

@@ -120,7 +120,7 @@ python stt/sensevoice.py --wav test.wav
 
 0.1.9 起，未配置侧车时会调用 OOPZ 的 `/area/v2/channel/enter`，让机器人账号以“在线”状态进入频道；私人频道会返回“暂无访问该频道的权限”。这只能拿到 Agora 凭据，不能收发音轨。
 
-0.1.14 起，读取分区/频道后如果还没选频道，界面会自动选第一个 VOICE 频道；后端在只给了 area、channel 为空时也会自动选第一个 VOICE 频道，避免“能读分区但开始通话按钮是灰的”。
+0.1.15 起，读取分区/频道后如果还没选频道，界面会自动选第一个 VOICE 频道；后端在只给了 area、channel 为空时也会自动选第一个 VOICE 频道，避免“能读分区但开始通话按钮是灰的”。
 
 0.1.10 起仓库自带一个 Playwright + Agora Web SDK 侧车 `sidecar/`，它会：
 - 用 `supplierSign`、`roomId`、数字 `pid` 加入 Agora 频道；

@@ -30,7 +30,7 @@ dsh plugin --profile desktop add file:D:\Documents\deepseek-harness\default-work
 dsh plugin --profile desktop add dsh-foxy-oopz
 ```
 
-安装后完整重启 DSH。左侧栏会出现 **Foxy OOPZ**，设置页也有同名入口。
+安装后完整重启 DSH。入口在 **Foxy → OOPZ**，设置页也有同名入口。
 
 ## OOPZ 登录
 
